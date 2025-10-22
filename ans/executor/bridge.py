@@ -28,10 +28,10 @@ class LocalClient:
         )
 
     def copy_file(self, src_path: str, dest_path: str) -> ExecutionResult:
-        return self.exec_command(f'cp "{src_path}" "{dest_path}"')
+        return self.exec_command(f'cp {src_path} {dest_path}')
     
     def make_dir(self, dir_path) -> ExecutionResult:
-        return self.exec_command(f'mkdir -p "{dir_path}"')
+        return self.exec_command(f'mkdir -p {dir_path}')
 
 class SSHClient:
     def __init__(self, hostname, username=None, password=None, key_path=None, port=22, timeout=10, sudo_password: str | None = None):
