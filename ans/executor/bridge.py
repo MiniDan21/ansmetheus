@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+import shutil
 import subprocess
 import paramiko
 
@@ -28,7 +28,9 @@ class LocalClient:
         )
 
     def copy_file(self, src_path: str, dest_path: str) -> ExecutionResult:
-        return self.exec_command(f'cp {src_path} {dest_path}')
+        shutil.copy(src_path, dest_path)
+        
+        return ExecutionResult(stdout=f"File {src_path} copied to {dest_path}")
     
     def make_dir(self, dir_path) -> ExecutionResult:
         return self.exec_command(f'mkdir -p {dir_path}')

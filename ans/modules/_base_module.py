@@ -9,7 +9,11 @@ class BaseModule:
         self._parse_input()
 
     def _parse_input(self):
-        if len(sys.argv) > 1:
+        if "--args" in sys.argv:
+            idx = sys.argv.index("--args")
+        if len(sys.argv) > idx + 1:
+            self.params = json.loads(sys.argv[idx + 1])
+        elif len(sys.argv) > 1:
             self.params = json.loads(sys.argv[1])
         else:
             raw = sys.stdin.read()

@@ -20,8 +20,13 @@ class Task:
         args_json = json.dumps(self.args or {})
     
         module_path = os.path.join(env.env_paths.modules_dir, f"{self.module_name}.py")
-        # Формируем команду для Bridge
-        cmd = f"python3 {module_path} '{args_json}'"
+        
+        # КОСТЯК
+        if env.os_type == "windows":
+            args_json = args_json.replace('"', r'\"')
+            cmd = f'python3 "{module_path}" --args "{args_json}"'
+        else:
+            cmd = f'python3 "{module_path}" --args "{args_json}"'
 
         print(f"[TASK] {self.name} → {cmd}")
         result = bridge.exec(cmd, sudo=self.sudo)

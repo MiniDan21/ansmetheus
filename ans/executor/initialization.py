@@ -32,11 +32,12 @@ class Environment:
             self.env_paths = EnvironmentPaths(root_dir, modules_dir, base_module_path)
         else:
             # Windows: используем переменную USERPROFILE
-            root_dir = f"%USERPROFILE%\\.ans_{self.env_id}"
+            root_dir = os.path.expandvars(r"%USERPROFILE%") + f"\\.ans_{self.env_id}"
             modules_dir = os.path.join(root_dir, "modules")
             base_module_path = os.path.join(modules_dir, self.base_module)
             self.env_paths = EnvironmentPaths(root_dir, modules_dir, base_module_path)
 
+        print(f"DEBUG: Created {self.env_paths.modules_dir}")
         self.bridge.make_dir(self.env_paths.modules_dir)
         last_result = self.bridge.copy_file(
             src_path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "modules", self.base_module), 
