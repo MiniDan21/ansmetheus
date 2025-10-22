@@ -2,7 +2,8 @@ import yaml
 from typing import List
 from pathlib import Path
 
-from .task import Task, logger
+from ans import logger
+from .task import Task
 from ans.modules import registry
 
 

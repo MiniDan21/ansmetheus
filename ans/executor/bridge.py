@@ -2,12 +2,7 @@ from dataclasses import dataclass
 import subprocess
 import paramiko
 
-
-@dataclass(frozen=True)
-class ExecutionResult:
-    stdout: str = ""
-    stderr: str = ""
-    returncode: int = 0
+from ans.annotation import ExecutionResult
     
 
 class LocalClient:

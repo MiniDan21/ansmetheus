@@ -1,22 +1,8 @@
-from .base import *
-from .apt import *
-from .debug import *
-from .ping import *
-from .shell import *
+import os
 
-
-registry = {
-        "ping": PingModule,
-        "apt": AptModule,
-        "shell": ShellModule,
-        "debug": DebugModule,
-    }
-
-class ModuleBuilder:
-    """Создаёт объект нужного модуля по названию"""
-    @classmethod
-    def create(cls, name: str, **params) -> BaseModule:
-        module_class = cls.registry.get(name)
-        if not module_class:
-            raise ValueError(f"Неизвестный модуль: {name}")
-        return module_class(name, **params)
+# Список всех модулей
+registry = []
+key_files = ["__init__.py", "_base_module.py"]
+for file in os.listdir(os.path.dirname(__file__)):
+    if file.endswith(".py") and file not in key_files:
+        registry.append(os.path.splitext(os.path.basename(file))[0])
