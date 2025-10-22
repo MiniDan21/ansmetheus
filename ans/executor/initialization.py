@@ -1,6 +1,6 @@
 import os
 import uuid
-import posixpath
+from pathlib import Path
 
 from .bridge import Bridge
 from ans.annotation import EnvironmentPaths, ExecutionResult
@@ -26,24 +26,33 @@ class Environment:
         self.os_type = self.detect_os()
 
         if self.os_type == "unix":
-            root_dir = f"~/.ans_{self.env_id}"
-            modules_dir = posixpath.join(root_dir, "modules")
-            base_module_path = posixpath.join(modules_dir, self.base_module)
-            self.env_paths = EnvironmentPaths(root_dir, modules_dir, base_module_path)
+            root_dir = Path.home() / f".ans_{self.env_id}"
+            modules_dir = root_dir / "modules"
+            base_module_path = modules_dir / self.base_module
         else:
-            # Windows: используем переменную USERPROFILE
-            root_dir = os.path.expandvars(r"%USERPROFILE%") + f"\\.ans_{self.env_id}"
-            modules_dir = os.path.join(root_dir, "modules")
-            base_module_path = os.path.join(modules_dir, self.base_module)
-            self.env_paths = EnvironmentPaths(root_dir, modules_dir, base_module_path)
+            # Windows
+            user_home = Path(os.path.expandvars(r"%USERPROFILE%"))
+            root_dir = user_home / f".ans_{self.env_id}"
+            modules_dir = root_dir / "modules"
+            base_module_path = modules_dir / self.base_module
+        
+        self.env_paths = EnvironmentPaths(
+            str(root_dir),
+            str(modules_dir),
+            str(base_module_path)
+        )
 
         print(f"DEBUG: Created {self.env_paths.modules_dir}")
+        
         self.bridge.make_dir(self.env_paths.modules_dir)
+        
         last_result = self.bridge.copy_file(
             src_path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "modules", self.base_module), 
             dest_path=self.env_paths.base_module_path
         )
+        
         print(f"Created dir {self.env_paths.modules_dir}")
+
         result: ExecutionResult = last_result
         if result.returncode != 0:
             raise RuntimeError(f"Failed to create environment: {result.stderr}")
