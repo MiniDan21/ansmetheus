@@ -1,3 +1,4 @@
+import os
 import json
 from dataclasses import dataclass
 
@@ -15,13 +16,12 @@ class Task:
 
     def run(self, bridge: Bridge, env: Environment) -> ExecutionResult:
         """Выполняет модуль на хосте через module_executor.py"""
-        executor_path = env.env_paths.executor_path
-
         # JSON аргументы для модуля
         args_json = json.dumps(self.args or {})
-
+    
+        module_path = os.path.join(env.env_paths.modules_dir, f"{self.module_name}.py")
         # Формируем команду для Bridge
-        cmd = f"python3 {executor_path} --module {self.module_name} --args '{args_json}'"
+        cmd = f"python3 {module_path} '{args_json}'"
 
         print(f"[TASK] {self.name} → {cmd}")
         result = bridge.exec(cmd, sudo=self.sudo)

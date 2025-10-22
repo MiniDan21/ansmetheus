@@ -39,14 +39,16 @@ class Environment:
 
         self.bridge.make_dir(self.env_paths.modules_dir)
         last_result = self.bridge.copy_file(
-            src_path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), self.env_paths.modules_dir, self.base_module), 
+            src_path=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "modules", self.base_module), 
             dest_path=self.env_paths.base_module_path
         )
+        print(f"Created dir {self.env_paths.modules_dir}")
         result: ExecutionResult = last_result
         if result.returncode != 0:
             raise RuntimeError(f"Failed to create environment: {result.stderr}")
 
     def init_module(self, module_name: str) -> None:
+        print(f"Created module {module_name}")
         src_module = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             f"modules/{module_name}.py"
@@ -60,11 +62,13 @@ class Environment:
     # ЭТОТ КУСОК ДОЛЖЕН ВЫПОЛНЯТЬ Bridge
     def destroy(self):
         """Удаляет временную директорию .ans_*"""
+        print(f"Deleted dir {self.env_paths.root}")
         cmd = f"rm -rf {self.env_paths.root}" if self.os_type == "unix" else f'rmdir /s /q "{self.env_paths.root}"'
         self.bridge.exec(cmd)
     
     def __enter__(self):
         self.init()
+        return self
     
-    def __exit__(self):
+    def __exit__(self, exc_type, exc_val, exc_tb):
         self.destroy()
