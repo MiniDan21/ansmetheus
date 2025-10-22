@@ -23,10 +23,12 @@ class Task:
         
         # КОСТЯК
         if env.os_type == "windows":
-            args_json = args_json.replace('"', r'\"')
-            cmd = f'python3 "{module_path}" --args "{args_json}"'
+            # В Windows нужно экранировать двойные кавычки → \"
+            safe_args = args_json.replace('"', r'\"')
+            cmd = f'python3 "{module_path}" --args "{safe_args}"'
         else:
-            cmd = f'python3 "{module_path}" --args "{args_json}"'
+            # В Linux bash понимает одинарные кавычки, они защищают внутренние "
+            cmd = f"python3 '{module_path}' --args '{args_json}'"
 
         print(f"[TASK] {self.name} → {cmd}")
         result = bridge.exec(cmd, sudo=self.sudo)
