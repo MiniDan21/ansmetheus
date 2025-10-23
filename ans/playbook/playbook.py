@@ -5,7 +5,7 @@ from pathlib import Path
 from ans import logger
 from ans.modules import EXISTING_MODULES
 from .task import Task
-from ans.executor.bridge import Bridge
+from ans.executor.initialization import EnvironmentBridge
 
 
 class Play:
@@ -15,11 +15,13 @@ class Play:
         self.tasks = tasks
         self.sudo = sudo
 
-    def run(self, bridge: Bridge):
-        logger.info(f"Play [{self.name}] at {bridge.host}")
+    def run(self, env: EnvironmentBridge):
+        logger.info(f"Play [{self.name}] at {env.get_hostname()}")
+        env.sudo_execution = self.sudo
+
         for task in self.tasks:
             task.vars = self.vars
-            task.run(bridge)
+            task.run(env)
 
     def __repr__(self):
         return f"<Play name={self.name!r} vars={list(self.vars.keys())} tasks={len(self.tasks)}>"
@@ -30,9 +32,9 @@ class Playbook:
         self.plays: List[Play] = []
         self.load(yaml_src)
 
-    def play(self, bridge: Bridge):
+    def play(self, env: EnvironmentBridge):
         for play in self.plays:
-            play.run(bridge)
+            play.run(env)
 
     def load(self, yaml_src):
         if isinstance(yaml_src, (list, tuple)):
@@ -68,7 +70,7 @@ class Playbook:
 
             found_modules = [m for m in EXISTING_MODULES if m in task_data]
             if len(found_modules) != 1:
-                raise SyntaxError(f"В задаче '{task_name}' нужно указать ровно один модуль")
+                raise SyntaxError(f"В задаче {task_name!r} нужно указать ровно один модуль")
 
             module_name = found_modules[0]
             module_args = task_data.get(module_name, {}) or {}

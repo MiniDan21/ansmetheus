@@ -3,8 +3,8 @@ from typing import List
 from ans.annotation import Host
 from ans.inventory import Inventory
 from ans.playbook import Playbook
-from .bridge import Bridge, BridgeConnectionError
-from .initialization import Environment
+from .bridge import Bridge
+from .initialization import EnvironmentBridge
 
 
 class Executor:
@@ -37,13 +37,13 @@ class Executor:
         for host in self.hosts:
             self._connect(host)
 
-            with Environment(self._connection):
-                self.playbook.play(self._connection)
+            with EnvironmentBridge(self._connection) as env:
+                self.playbook.play(env)
 
     def execute_module(self):
         raise NotImplementedError
         for host in self.hosts:
             self._connect(host)
 
-            with Environment(self._connection) as env:
+            with EnvironmentBridge(self._connection) as env:
                 ...

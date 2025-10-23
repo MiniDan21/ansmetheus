@@ -128,8 +128,16 @@ class Bridge:
         if not self.client:
             raise BridgeConnectionError(f"Не удалось установить соединение: {ip_address}")
 
-    def exec(self, command, sudo: bool = False) -> ExecutionResult:
-        return self.client.exec_command(command)
+    def detect_os(self) -> str:
+        """Определяет тип ОС на целевом хосте"""
+        result = self._exec("uname", sudo=False)
+        if result.returncode == 0 and result.stdout:
+            return "unix"
+        # Если uname не найден — вероятнее всего Windows
+        return "windows"
+
+    def _exec(self, command, _sudo: bool = None) -> ExecutionResult:
+        return self.client.exec_command(command, _sudo)
     
     def copy_file(self, src_path: str, dest_path: str) -> ExecutionResult:
         if isinstance(self.client, SSHClient):

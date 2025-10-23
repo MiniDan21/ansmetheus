@@ -2,8 +2,7 @@ import os
 import json
 
 from ans.annotation import ExecutionResult
-from ans.executor.bridge import Bridge
-from ans.executor.initialization import Environment
+from ans.executor.initialization import EnvironmentBridge as Connection
 
 
 class Task:
@@ -11,32 +10,21 @@ class Task:
         self,
         name: str,
         module_name: str,
-        sudo: bool = False,
+        register: str | None = None,
         **kwargs
     ):
         self.name = name
         self.module_name = module_name
+        self.register = register
         self.args = kwargs
-        self.sudo = sudo
 
-    def run(self, bridge: Bridge, env: Environment) -> ExecutionResult:
+    def run(self, connection: Connection) -> ExecutionResult:
         """Выполняет модуль на хосте через module_executor.py"""
         # JSON аргументы для модуля
         args_json = json.dumps(self.args or {})
-    
-        module_path = os.path.join(env.env_paths.modules_dir, f"{self.module_name}.py")
-        
-        # КОСТЯК
-        if env.os_type == "windows":
-            # В Windows нужно экранировать двойные кавычки → \"
-            safe_args = args_json.replace('"', r'\"')
-            cmd = f'python3 "{module_path}" --args "{safe_args}"'
-        else:
-            # В Linux bash понимает одинарные кавычки, они защищают внутренние "
-            cmd = f"python3 '{module_path}' --args '{args_json}'"
 
-        print(f"[TASK] {self.name} → {cmd}")
-        result = bridge.exec(cmd, sudo=self.sudo)
+        print(f"[TASK] {self.name}")
+        result = connection.run_python_module(self.module_name, args_json)
 
         # парсим JSON из stdout обратно
         try:
@@ -46,3 +34,6 @@ class Task:
             print(f"  ↳ RAW OUTPUT: {result.stdout or result.stderr}")
 
         return result
+
+    def __repr__(self):
+        return f"<Task name={self.name!r} module={self.module_name!r} args={len(self.args)}>"
