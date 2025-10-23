@@ -123,6 +123,9 @@ class Bridge:
             self.client = LocalClient(sudo_password=kwargs.get("sudo_password"))
         else:
             self.client = SSHClient(hostname=self.ip_address, **kwargs)
+            
+        if not self.client:
+            raise BridgeConnectionError(f"Не удалось установить соединение: {ip_address}")
 
     def exec(self, command, sudo: bool = False) -> ExecutionResult:
         return self.client.exec_command(command)
@@ -152,3 +155,7 @@ class Bridge:
             self.close()
         except Exception:
             pass
+
+class BridgeConnectionError(Exception):
+    """Ошибка подключения через Bridge"""
+    pass

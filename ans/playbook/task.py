@@ -1,18 +1,23 @@
 import os
 import json
-from dataclasses import dataclass
 
 from ans.annotation import ExecutionResult
 from ans.executor.bridge import Bridge
 from ans.executor.initialization import Environment
 
 
-@dataclass
 class Task:
-    name: str
-    module_name: str
-    args: dict
-    sudo: bool = False
+    def __init__(
+        self,
+        name: str,
+        module_name: str,
+        sudo: bool = False,
+        **kwargs
+    ):
+        self.name = name
+        self.module_name = module_name
+        self.args = kwargs
+        self.sudo = sudo
 
     def run(self, bridge: Bridge, env: Environment) -> ExecutionResult:
         """Выполняет модуль на хосте через module_executor.py"""
