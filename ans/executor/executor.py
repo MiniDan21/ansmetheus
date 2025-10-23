@@ -1,3 +1,5 @@
+from typing import List
+
 from ans.annotation import Host
 from ans.inventory import Inventory
 from ans.playbook import Playbook
@@ -13,7 +15,7 @@ class Executor:
         
         self._connection: Bridge | None = None
 
-        self.hosts = []        
+        self.hosts: List[Host] = []        
         if self.inventory.isgroup(self.host_group):
             self.hosts = self.inventory.get_hosts(group_name=self.host_group)
         else:
@@ -22,6 +24,7 @@ class Executor:
     def _connect(self, host: Host):
         self._connection = Bridge(
             ip_address=host.ip,
+            hostname=host.name,
             username=host.username,
             password=host.password,
             key_path=host.key_path,
@@ -34,8 +37,8 @@ class Executor:
         for host in self.hosts:
             self._connect(host)
 
-            with Environment(self._connection) as env:
-                self.playbook.play(self._connection, env)
+            with Environment(self._connection):
+                self.playbook.play(self._connection)
 
     def execute_module(self):
         raise NotImplementedError

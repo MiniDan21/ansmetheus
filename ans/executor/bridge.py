@@ -116,8 +116,9 @@ class SSHClient:
 
 class Bridge:
     """Определяет тип клиента и предоставляет унифицированный интерфейс"""
-    def __init__(self, ip_address, **kwargs):
+    def __init__(self, ip_address, hostname: str = "unnamed host", **kwargs):
         self.ip_address = ip_address
+        self.hostname = hostname
 
         if self.ip_address in ("localhost", "127.0.0.1"):
             self.client = LocalClient(sudo_password=kwargs.get("sudo_password"))
