@@ -10,7 +10,7 @@ class EnvironmentBridge:
     def __init__(self, bridge: Bridge, base_module: str = "_base_module.py", sudo_execution: bool = False):
         self.env_id = str(uuid.uuid4())[:8]
         self.__bridge: Bridge = bridge
-        self.sudo_execution: bool = False
+        self.sudo_execution: bool = sudo_execution
         self.os_type = None
         self.base_module = base_module
         self.env_paths = None

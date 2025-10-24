@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 
-
+# Разобраться, что с этим делать
 LOG_FILE = Path("ansmini.log")
 
 logging.basicConfig(

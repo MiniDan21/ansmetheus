@@ -1,17 +1,27 @@
+import os
 from typing import List
 
 from ans.annotation import Host
 from ans.inventory import Inventory
-from ans.playbook import Playbook
+from ans.playbook import Playbook, Task
 from .bridge import Bridge
 from .initialization import EnvironmentBridge
 
 
+def modify_paths(paths: List[str]) -> List[str]:
+    new_paths = []
+    for path in paths:
+        if not os.path.exists(path):
+            path = os.path.join(os.getcwd(), path)
+            
+        new_paths.append(path)
+
+    return new_paths
+
 class Executor:
-    def __init__(self, host_group: str, inventory_files, playbook_files):
+    def __init__(self, host_group: str, inventory_files):
         self.host_group = host_group
-        self.inventory = Inventory(inventory_files)
-        self.playbook = Playbook(playbook_files)
+        self.inventory = Inventory(modify_paths(inventory_files))
         
         self._connection: Bridge | None = None
 
@@ -32,18 +42,19 @@ class Executor:
             timeout=host.timeout,
             sudo_password=host.sudo_password,
         )
-    
-    def execute_playbook(self):
+
+    def execute_playbook(self, playbook_files):
+        playbook = Playbook(modify_paths(playbook_files))
+        
         for host in self.hosts:
             self._connect(host)
 
             with EnvironmentBridge(self._connection) as env:
-                self.playbook.play(env)
+                playbook.play(env)
 
-    def execute_module(self):
-        raise NotImplementedError
+    def execute_module(self, module_name, sudo: bool, **args):
         for host in self.hosts:
             self._connect(host)
 
-            with EnvironmentBridge(self._connection) as env:
-                ...
+            with EnvironmentBridge(self._connection, sudo_execution=sudo) as env:
+                task = Task("Oneshot task", module_name, args)
