@@ -9,7 +9,7 @@ def argparser():
         description="Ansmetheus утилита для запуска задач и мониторинг на узлах"
     )
 
-    parser.add_argument("host_group", required=True, help="Название хоста или группы из inventory-файла")
+    parser.add_argument("host_group", help="Название хоста или группы из inventory-файла")
     parser.add_argument("-i", "--inventory", required=True, nargs="+", help="Путь до inventory-файлов")
 
     parser.add_argument("-m", "--module", required=True, help="Название модуля для исполнения")
@@ -40,7 +40,7 @@ def main():
     module_args = parse_module_args(args.args)
     
     executor = Executor(args.host_group, args.inventory)
-    executor.execute_module(args.module, module_args, args.sudo)
+    executor.execute_module(args.module, args.sudo, **module_args)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 import subprocess
+import platform
 from _base_module import BaseModule
 
 
@@ -10,7 +11,9 @@ class Module(BaseModule):
 
     def run(self):
         host = self.params.get("host", "127.0.0.1")
-        cmd = ["ping", "-c", "1", host]
+
+        count_flag = "-n" if platform.system().lower().startswith("win") else "-c"
+        cmd = ["ping", count_flag, "1", host]
 
         process = subprocess.run(cmd, capture_output=True, text=True)
         if process.returncode == 0:

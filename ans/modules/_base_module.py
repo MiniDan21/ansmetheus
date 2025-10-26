@@ -21,7 +21,7 @@ class BaseModule:
                 self.params = json.loads(raw)
 
     def exit_json(self, **kwargs):
-        print(json.dumps({"changed": True, **kwargs}))
+        print(json.dumps({"changed": False, **kwargs}))
         sys.exit(0)
 
     def fail_json(self, msg):

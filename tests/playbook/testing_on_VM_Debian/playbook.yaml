@@ -1,0 +1,15 @@
+- name: Test Debian Host
+  sudo: true
+
+  tasks:
+  - name: Update APT cache
+    apt:
+      update_cache: true
+
+  - name: Install package
+    apt:
+      name: "build-essential"
+      state: present
+
+  - name: Check network connectivity
+    ping:

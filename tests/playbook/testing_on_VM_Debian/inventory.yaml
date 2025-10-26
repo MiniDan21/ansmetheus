@@ -1,0 +1,9 @@
+all:
+  hosts:
+    debian_host:
+      ip: 192.168.1.51
+      username: vboxuser
+      password: password
+      port: 22
+      timeout: 3
+      sudo_password: password

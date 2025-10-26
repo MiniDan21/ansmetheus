@@ -16,7 +16,7 @@ class Play:
         self.sudo = sudo
 
     def run(self, env: EnvironmentBridge):
-        logger.info(f"Play [{self.name}] at {env.get_hostname()}")
+        print(f"Play [{self.name}] at {env.get_hostname()}")
         env.sudo_execution = self.sudo
 
         for task in self.tasks:

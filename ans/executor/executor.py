@@ -55,6 +55,7 @@ class Executor:
     def execute_module(self, module_name, sudo: bool, **args):
         for host in self.hosts:
             self._connect(host)
-
+            
             with EnvironmentBridge(self._connection, sudo_execution=sudo) as env:
-                task = Task("Oneshot task", module_name, args)
+                task = Task("Oneshot task", module_name, **args)
+                task.run(env)

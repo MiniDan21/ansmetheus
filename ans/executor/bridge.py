@@ -11,7 +11,7 @@ class LocalClient:
 
     def exec_command(self, command, sudo: bool = False) -> ExecutionResult:
         if sudo:
-            command = f"sudo -S {command}"
+            command = f"sudo -S -p '' {command}"
    
         process = subprocess.run(
             command,
@@ -76,10 +76,10 @@ class SSHClient:
             self.connect()
             
         if sudo:
-            command = f"sudo -S {command}"
+            command = f"sudo -S -p '' {command}"
 
         try:
-            stdin, stdout, stderr = self.client.exec_command(command, get_pty=True)
+            stdin, stdout, stderr = self.client.exec_command(command)
             if sudo and self.sudo_password:
                 stdin.write(self.sudo_password + "\n")
                 stdin.flush()
@@ -130,7 +130,7 @@ class Bridge:
 
     def detect_os(self) -> str:
         """Определяет тип ОС на целевом хосте"""
-        result = self._exec("uname", sudo=False)
+        result = self._exec("uname", _sudo=False)
         if result.returncode == 0 and result.stdout:
             return "unix"
         # Если uname не найден — вероятнее всего Windows

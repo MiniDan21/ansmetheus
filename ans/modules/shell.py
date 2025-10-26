@@ -10,12 +10,15 @@ class Module(BaseModule):
 
     def run(self):
         cmd = self.params.get("cmd")
+        if not cmd:
+            self.fail_json("Parameter 'cmd' is required")
+
         process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
 
         if process.returncode == 0:
-            self.exit_json(stdout=process.stdout)
+            self.exit_json(stdout=process.stdout.strip())
         else:
-            self.fail_json(process.stderr)
+            self.fail_json(process.stderr.strip())
 
 
 if __name__ == "__main__":
