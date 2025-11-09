@@ -26,12 +26,11 @@ class EnvironmentBridge:
             modules_dir = f"{root_dir}/modules"
             base_module_path = f"{modules_dir}/{self.base_module}"
         # ЛОГИЧЕСКАЯ ОШИБКА
-        # else:
-        #     # Windows
-        #     user_home = Path(os.path.expandvars(r"%USERPROFILE%"))
-        #     root_dir = user_home / f".ans_{self.env_id}"
-        #     modules_dir = root_dir / "modules"
-        #     base_module_path = modules_dir / self.base_module
+        else:
+            # Windows
+            root_dir = f".ans_{self.env_id}"
+            modules_dir = f"{root_dir}\\modules"
+            base_module_path = f"{modules_dir}\\{self.base_module}"
         
         self.env_paths = EnvironmentPaths(
             str(root_dir),
