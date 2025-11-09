@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-import os, importlib, pkgutil
+import os, importlib, pkgutil, subprocess, sys
 from PyQt6.QtWidgets import *
 from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.QtGui import QFont
-from ans.executor.executor import Executor
 from .inventory import InventoryFileManager
 
 MODULES_PACKAGE = "ans.modules"
 
 
+### === LOAD MODULES === ###
 def load_modules():
 	out = {}
 	pkg = importlib.import_module(MODULES_PACKAGE)
@@ -18,16 +18,18 @@ def load_modules():
 			cls = getattr(mod, "Module", None)
 			if cls:
 				out[name] = cls().argument_spec
-		except:
+		except Exception:
 			pass
 	return out
 
 
+### === LOG WINDOW === ###
 class ModuleLogDialog(QDialog):
 	def __init__(self, host, module):
 		super().__init__()
 		self.setWindowTitle(f"Запуск модуля: {host} → {module}")
 		self.resize(900, 600)
+
 		v = QVBoxLayout(self)
 
 		self.text = QTextEdit()
@@ -42,36 +44,68 @@ class ModuleLogDialog(QDialog):
 		v.addWidget(btn)
 
 	def log(self, msg):
+		# сохраним ANSI (потом можно сделать раскраску)
 		self.text.append(msg)
 		self.text.ensureCursorVisible()
 
 
+### === THREAD — CLI RUNNER === ###
 class ModuleRunner(QThread):
 	log = pyqtSignal(str)
 	done = pyqtSignal(bool)
 
-	def __init__(self, host, inv, module, args):
+	def __init__(self, host, inv_path, module, args):
 		super().__init__()
-		self.host, self.inv, self.module, self.args = host, inv, module, args
+		self.host = host
+		self.inv = inv_path
+		self.module = module
+		self.args = args
 
 	def run(self):
 		try:
-			ex = Executor(self.host, [self.inv])
-			result = ex.execute_module(self.module, False, **self.args)
+			cmd = [
+				sys.executable,
+				"ans_module.py",
+				self.host,
+				"-i", self.inv,
+				"-m", self.module
+			]
 
-			if isinstance(result, str):
-				for l in result.splitlines():
-					self.log.emit(l)
-			else:
-				self.log.emit(str(result))
+			for k, v in self.args.items():
+				cmd += ["-a", f"{k}={v}"]
 
-			self.done.emit(True)
+			process = subprocess.Popen(
+				cmd,
+				stdout=subprocess.PIPE,
+				stderr=subprocess.PIPE,
+				text=True
+			)
+
+			failed = False
+
+			for line in process.stdout:
+				line = line.rstrip()
+				self.log.emit(line)
+
+				# detect fail lines
+				lc = line.lower()
+				if "failed:" in lc or "fatal" in lc or "error" in lc:
+					failed = True
+
+			for line in process.stderr:
+				line = line.rstrip()
+				self.log.emit(f"❗ {line}")
+				failed = True
+
+			rc = process.wait()
+			self.done.emit(not failed and rc == 0)
 
 		except Exception as e:
 			self.log.emit(f"❗ {str(e)}")
 			self.done.emit(False)
 
 
+### === MODULE WINDOW UI === ###
 class ModuleWindow(QWidget):
 	def __init__(self, back):
 		super().__init__()
@@ -84,6 +118,7 @@ class ModuleWindow(QWidget):
 
 		layout = QVBoxLayout(self)
 
+		# MODULE SELECT
 		layout.addWidget(QLabel("Модуль"))
 		self.module = QComboBox()
 		self.module.setFont(QFont("Arial", 13))
@@ -92,6 +127,7 @@ class ModuleWindow(QWidget):
 		self.module.currentTextChanged.connect(self.render_args)
 		layout.addWidget(self.module)
 
+		# ARGS FORM
 		layout.addWidget(QLabel("Аргументы"))
 		self.args_widget = QWidget()
 		self.args_form = QFormLayout(self.args_widget)
@@ -100,10 +136,12 @@ class ModuleWindow(QWidget):
 		self.fields = {}
 		self.render_args(self.module.currentText())
 
+		# RUN BUTTON
 		run = QPushButton("🚀 Запустить")
 		run.clicked.connect(self.run_module)
 		layout.addWidget(run)
 
+		# BACK BUTTON
 		back_btn = QPushButton("⬅ Назад")
 		back_btn.clicked.connect(self.go_back)
 		layout.addWidget(back_btn)
@@ -129,7 +167,6 @@ class ModuleWindow(QWidget):
 
 	def run_module(self):
 		module = self.module.currentText().strip()
-
 		args = {k: v.text() for k, v in self.fields.items() if v.text().strip() != ""}
 
 		inv_path = os.path.join(os.getcwd(), "inventory.yaml")
@@ -149,7 +186,11 @@ class ModuleWindow(QWidget):
 		r.log.connect(log.log)
 
 		def on_done(ok, runner=r, dialog=log):
-			dialog.log("✅ Готово" if ok else "❌ Ошибка")
+			if ok:
+				dialog.log("✅ Готово")
+			else:
+				dialog.log("❌ Ошибка")
+
 			if runner in self.runners:
 				self.runners.remove(runner)
 

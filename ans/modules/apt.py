@@ -1,5 +1,8 @@
 import subprocess
-from ._base_module import BaseModule
+try:
+	from _base_module import BaseModule
+except ImportError:
+	from ._base_module import BaseModule
 
 
 class Module(BaseModule):

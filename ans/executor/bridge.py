@@ -36,13 +36,13 @@ class LocalClient:
         return self.exec_command(f'mkdir -p {dir_path}')
 
 class SSHClient:
-    def __init__(self, hostname, username=None, password=None, key_path=None, port=22, timeout=10, sudo_password: str | None = None):
+    def __init__(self, hostname, username=None, password=None, key_path=None, port=None, timeout=None, sudo_password: str | None = None):
         self.hostname = hostname
         self.username = username
         self.password = password
         self.key_path = key_path
-        self.port = port
-        self.timeout = timeout
+        self.port = port or 22
+        self.timeout = timeout or 10
         self.sudo_password = sudo_password
         self.client = None
 

@@ -1,5 +1,8 @@
 import subprocess
-from ._base_module import BaseModule
+try:
+	from _base_module import BaseModule
+except ImportError:
+	from ._base_module import BaseModule
 
 
 class Module(BaseModule):
@@ -13,7 +16,9 @@ class Module(BaseModule):
         if not cmd:
             self.fail_json("Parameter 'cmd' is required")
 
-        process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        with open("TESTLOG", "w") as file:
+            process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+            file.write(cmd)
 
         if process.returncode == 0:
             self.exit_json(stdout=process.stdout.strip())
