@@ -1,13 +1,11 @@
 import subprocess
 import platform
-from _base_module import BaseModule
+from ._base_module import BaseModule
 
 
 class Module(BaseModule):
     def __init__(self):
-        super().__init__(argument_spec={
-            "host": {"default": "127.0.0.1"}
-        })
+        super().__init__()
 
     def run(self):
         host = self.params.get("host", "127.0.0.1")

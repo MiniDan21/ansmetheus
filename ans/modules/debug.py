@@ -1,4 +1,4 @@
-from _base_module import BaseModule
+from ._base_module import BaseModule
 
 
 class Module(BaseModule):

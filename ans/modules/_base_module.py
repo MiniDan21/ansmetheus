@@ -11,14 +11,14 @@ class BaseModule:
     def _parse_input(self):
         if "--args" in sys.argv:
             idx = sys.argv.index("--args")
-        if len(sys.argv) > idx + 1:
-            self.params = json.loads(sys.argv[idx + 1])
-        elif len(sys.argv) > 1:
-            self.params = json.loads(sys.argv[1])
-        else:
-            raw = sys.stdin.read()
-            if raw.strip():
-                self.params = json.loads(raw)
+            if len(sys.argv) > idx + 1:
+                self.params = json.loads(sys.argv[idx + 1])
+            elif len(sys.argv) > 1:
+                self.params = json.loads(sys.argv[1])
+            else:
+                raw = sys.stdin.read()
+                if raw.strip():
+                    self.params = json.loads(raw)
 
     def exit_json(self, **kwargs):
         print(json.dumps({"changed": False, **kwargs}))
