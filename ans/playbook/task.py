@@ -37,7 +37,7 @@ class Task:
         args_json = json.dumps(self.args or {})
 
         connection.init_module(self.module_name)
-        print(f"\nTASK [{self.name}]".ljust(70, "*"))
+        print(f"\nTASK [{self.name}]".ljust(70, "*"), flush=True)
 
         result = connection.run_python_module(self.module_name, args_json)
         stdout = result.stdout.strip()
@@ -57,13 +57,13 @@ class Task:
             status = "ok"
 
         summary = f"{status}: [{connection.get_hostname()}]"
-        print(self._colorize(summary, status))
+        print(self._colorize(summary, status), flush=True)
 
         msg = parsed.get("msg") or parsed.get("stdout")
         if msg:
-            print(f"  {msg.strip()}")
+            print(f"  {msg.strip()}", flush=True)
         elif stderr and status == "failed":
-            print(f"  {stderr.strip()}")
+            print(f"  {stderr.strip()}", flush=True)
 
         return result
 

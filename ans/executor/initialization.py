@@ -68,10 +68,10 @@ class EnvironmentBridge:
         if self.os_type == "windows":
             # В Windows нужно экранировать двойные кавычки → \"
             safe_args = args_json.replace('"', r'\"')
-            cmd = f'python3 -B "{module_path}" --args "{safe_args}"'
+            cmd = f'python3 -B -u "{module_path}" --args "{safe_args}"'
         else:
             # В Linux bash понимает одинарные кавычки, они защищают внутренние "
-            cmd = f"python3 -B '{module_path}' --args '{args_json}'"
+            cmd = f"python3 -B -u '{module_path}' --args '{args_json}'"
         
         return self.exec(cmd)
         
