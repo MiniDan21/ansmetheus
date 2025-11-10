@@ -58,6 +58,8 @@ class InventoryFileManager:
         username: Optional[str] = None,
         password: Optional[str] = None,
         key_path: Optional[str] = None,
+        port: int = 22,
+        timeout: int = 10,
     ):
         self.data[ROOT]["hosts"][host_name] = {
             "ip": ip or host_name,
@@ -65,6 +67,8 @@ class InventoryFileManager:
             "password": password,
             "sudo_password": password,
             "key_path": key_path,
+            "port": port,
+            "timeout": timeout,
         }
         self._save()
 
