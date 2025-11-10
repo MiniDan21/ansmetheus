@@ -49,7 +49,7 @@ class Task:
             parsed = {}
 
         # Определяем состояние
-        if parsed.get("failed"):
+        if result.returncode != 0 or parsed.get("failed"):
             status = "failed"
         elif parsed.get("changed"):
             status = "changed"

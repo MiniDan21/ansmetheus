@@ -1,6 +1,7 @@
 import shutil
 import subprocess
 import paramiko
+from pathlib import Path
 
 from ans.annotation import ExecutionResult
     
@@ -29,11 +30,17 @@ class LocalClient:
 
     def copy_file(self, src_path: str, dest_path: str) -> ExecutionResult:
         shutil.copy(src_path, dest_path)
-        
         return ExecutionResult(stdout=f"File {src_path} copied to {dest_path}")
-    
+
     def make_dir(self, dir_path) -> ExecutionResult:
-        return self.exec_command(f'mkdir -p {dir_path}')
+        p = Path(dir_path)
+        existed = p.exists()
+        p.mkdir(parents=True, exist_ok=True)
+        return ExecutionResult(
+            stdout=f"Directory {dir_path} {'existed' if existed else 'created'}",
+            returncode=0
+        )
+
 
 class SSHClient:
     def __init__(self, hostname, username=None, password=None, key_path=None, port=None, timeout=None, sudo_password: str | None = None):
@@ -127,33 +134,55 @@ class Bridge:
             
         if not self.client:
             raise BridgeConnectionError(f"Не удалось установить соединение: {ip_address}")
+        
+        # Обязательно после инициализации self.client
+        self.os_type = self._detect_os()
 
-    def detect_os(self) -> str:
+    def _detect_os(self) -> str:
         """Определяет тип ОС на целевом хосте"""
         result = self._exec("uname", _sudo=False)
-        if result.returncode == 0 and result.stdout:
+
+        if result.returncode == 0:
+            out = result.stdout.strip().lower()
+            if "mingw" in out or "msys" in out or "nt" in out:
+
+                return "windows"
+
             return "unix"
-        # Если uname не найден — вероятнее всего Windows
+
         return "windows"
+    
+    def path(self, path, *paths) -> str:
+        sp = "/" if self.os_type == "unix" else "\\"
+        result = str(path)
+        for path in paths:
+            result += sp + path
+        
+        return result
+    
+    def safe_python_cmd(self, module_path: str, args_json: str) -> str:
+        if self.os_type == "windows":
+            # В Windows нужно экранировать двойные кавычки → \"
+            safe_args = args_json.replace('"', r'\"')
+            cmd = f'python3 -B -u "{module_path}" --args "{safe_args}"'
+        else:
+            # В Linux bash понимает одинарные кавычки, они защищают внутренние "
+            cmd = f"python3 -B -u '{module_path}' --args '{args_json}'"
+        
+        return cmd
+    
+    def safe_clear_dir(self, directory: str):
+        cmd = f"rm -rf {directory}" if self.os_type == "unix" else f'rmdir /s /q "{directory}"'
+        self._exec(cmd, _sudo=False)
 
     def _exec(self, command, _sudo: bool = None) -> ExecutionResult:
         return self.client.exec_command(command, _sudo)
     
     def copy_file(self, src_path: str, dest_path: str) -> ExecutionResult:
-        if isinstance(self.client, SSHClient):
-            return self.client.copy_file(src_path, dest_path)
-        elif isinstance(self.client, LocalClient):
-            return self.client.copy_file(src_path, dest_path)
-        else:
-            return ExecutionResult(stderr="Unknown client type", returncode=1)
+        return self.client.copy_file(src_path, dest_path)
         
     def make_dir(self, dir_path) -> ExecutionResult:
-        if isinstance(self.client, SSHClient):
-            return self.client.make_dir(dir_path)
-        elif isinstance(self.client, LocalClient):
-            return self.client.make_dir(dir_path)
-        else:
-            return ExecutionResult(stderr="Unknown client type", returncode=1)
+        return self.client.make_dir(dir_path)
 
     def close(self):
         if isinstance(self.client, SSHClient):
