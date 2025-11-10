@@ -19,15 +19,19 @@ class HostForm(QDialog):
     def __init__(self, on_submit, host=None):
         super().__init__()
         self.setWindowTitle("Хост")
-        self.setFixedSize(450, 300)
+        self.setFixedSize(450, 360)
 
         form = QFormLayout(self)
+
         self.n = QLineEdit()
         self.ip = QLineEdit()
         self.user = QLineEdit()
         self.key = QLineEdit()
         self.pwd = QLineEdit()
         self.pwd.setEchoMode(QLineEdit.EchoMode.Password)
+
+        self.port = QLineEdit("22")
+        self.timeout = QLineEdit("10")
 
         btn_key = QPushButton("📂")
         btn_key.setFixedWidth(40)
@@ -41,6 +45,8 @@ class HostForm(QDialog):
         form.addRow("User:", self.user)
         form.addRow("SSH ключ:", key_row)
         form.addRow("Пароль:", self.pwd)
+        form.addRow("Порт:", self.port)
+        form.addRow("Timeout:", self.timeout)
 
         btn = QPushButton("Сохранить" if host else "Создать")
         btn.setDefault(True)
@@ -54,6 +60,8 @@ class HostForm(QDialog):
             self.user.setText(host.username or "")
             self.key.setText(host.key_path or "")
             self.pwd.setText(host.password or "")
+            self.port.setText(str(getattr(host, "port", 22)))
+            self.timeout.setText(str(getattr(host, "timeout", 10)))
 
     def pick_key(self):
         p, _ = QFileDialog.getOpenFileName(self, "SSH key", "", "*")
@@ -65,14 +73,23 @@ class HostForm(QDialog):
         if not valid_name(name):
             QMessageBox.warning(self, "Ошибка", "Недопустимое имя")
             return
+
+        # validate numbers
+        if not self.port.text().isdigit() or not self.timeout.text().isdigit():
+            QMessageBox.warning(self, "Ошибка", "Порт и timeout должны быть числами")
+            return
+
         cb({
             "host_name": name,
             "ip": self.ip.text().strip(),
             "username": self.user.text().strip(),
             "key_path": self.key.text().strip(),
-            "password": self.pwd.text().strip()
+            "password": self.pwd.text().strip(),
+            "port": int(self.port.text().strip()),
+            "timeout": int(self.timeout.text().strip())
         })
         self.close()
+
 
 
 class GroupForm(QDialog):

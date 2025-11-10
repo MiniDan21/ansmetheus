@@ -64,7 +64,6 @@ class EnvironmentBridge:
 
     def run_python_module(self, module_name, args_json: str = ""):
         module_path = f"{self.env_paths.modules_dir}/{module_name}.py"
-        
         # КОСТЯК
         if self.os_type == "windows":
             # В Windows нужно экранировать двойные кавычки → \"
@@ -73,7 +72,7 @@ class EnvironmentBridge:
         else:
             # В Linux bash понимает одинарные кавычки, они защищают внутренние "
             cmd = f"python3 -B '{module_path}' --args '{args_json}'"
-            
+        
         return self.exec(cmd)
         
     # ЭТОТ КУСОК ДОЛЖЕН ВЫПОЛНЯТЬ Bridge

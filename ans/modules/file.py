@@ -1,46 +1,48 @@
 import os
-import subprocess
 try:
-    from _base_module import BaseModule
+	from _base_module import BaseModule
 except ImportError:
-    from ._base_module import BaseModule
-
+	from ._base_module import BaseModule
 
 class Module(BaseModule):
     def __init__(self):
         super().__init__(argument_spec={
             "path": {"required": True},
-            "state": {"default": "present", "choices": ["present", "absent"]},
+            "state": {"default": "touch", "choices": ["touch", "absent", "file"]},
             "content": {"required": False, "default": ""}
         })
 
     def run(self):
         path = self.params.get("path")
         state = self.params.get("state")
-        content = self.params.get("content")
+        content = self.params.get("content", "")
 
-        exists = os.path.exists(path)
-
-        if state == "present":
-            if exists:
-                with open(path, "r") as f:
-                    current = f.read()
-                if current == content:
-                    self.exit_json(changed=False, msg="File already exists with same content")
-                else:
-                    with open(path, "w") as f:
-                        f.write(content)
-                    self.exit_json(changed=True, msg="File content updated")
+        if state == "absent":
+            if os.path.exists(path):
+                os.remove(path)
+                self.exit_json(changed=True, msg=f"Removed {path}")
             else:
-                with open(path, "w") as f:
-                    f.write(content)
-                self.exit_json(changed=True, msg="File created")
+                self.exit_json(changed=False, msg=f"File {path} already absent")
+        
+        if state == "touch":
+            existed = os.path.exists(path)
+            with open(path, "a"):
+                os.utime(path, None)
+            self.exit_json(
+                changed=not existed,
+                msg="Touched file" + ("" if existed else " (created)")
+            )
 
-        elif state == "absent":
-            if not exists:
-                self.exit_json(changed=False, msg="File already absent")
-            os.remove(path)
-            self.exit_json(changed=True, msg="File removed")
+        if state == "file":
+            existed = os.path.exists(path)
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(content)
+
+            self.exit_json(
+                changed=True,
+                msg=f"File {path} {'updated' if existed else 'created'}",
+                content_written=True
+            )
 
 
 if __name__ == "__main__":

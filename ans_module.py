@@ -15,7 +15,7 @@ def argparser():
     parser.add_argument("-m", "--module", required=True, help="Название модуля для исполнения")
     parser.add_argument(
         "-a", "--args",
-        nargs="+",
+        nargs="*",
         metavar="KEY=VALUE",
         help="Аргументы модуля в формате key=value (например: name=curl state=present)"
     )
