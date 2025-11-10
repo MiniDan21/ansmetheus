@@ -2,9 +2,13 @@
 import os, sys
 from PyQt6.QtWidgets import *
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QFont, QPixmap
 from .inventory_file_manager import InventoryFileManager
 from ans.executor.executor import Executor
+
+
+
+icon_path = os.path.join(os.getcwd(), "ans", "assets", "icons", "success.png")
 
 
 def valid_name(x: str) -> bool:
@@ -397,7 +401,15 @@ class InventoryGUI(QMainWindow):
         try:
             e = Executor(n, [self.file])
             e.execute_module("ping", sudo=False)
-            QMessageBox.information(self, "Пинг", "✅ Доступен")
+            # QMessageBox.information(self, "Пинг", "Доступен")
+            dpr = self.devicePixelRatioF()
+            size = int(24 * dpr)
+            pixmap = QPixmap(icon_path).scaled(size, size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            box = QMessageBox()
+            box.setWindowTitle("Пинг")
+            box.setText("Доступен")
+            box.setIconPixmap(pixmap)
+            box.exec()
         except Exception as ex:
             QMessageBox.warning(self, "Пинг", f"❌ Недоступен\n{ex}")
 

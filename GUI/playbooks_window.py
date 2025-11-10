@@ -5,6 +5,7 @@ from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QFont
 from .inventory import InventoryFileManager
 
+
 PLAYBOOK_CLI = os.path.join(os.getcwd(), "ans_playbook.py")
 MODULES_PACKAGE = "ans.modules"
 
@@ -33,6 +34,7 @@ class RunLogDialog(QDialog):
         self.text = QTextEdit()
         self.text.setFont(QFont("Consolas", 11))
         self.text.setReadOnly(True)
+        self.text.setStyleSheet("QTextEdit { background-color:#111; color:#ddd; }")
 
         btn = QPushButton("Закрыть")
         btn.setFont(QFont("Arial", 13))
@@ -41,8 +43,45 @@ class RunLogDialog(QDialog):
         v.addWidget(self.text)
         v.addWidget(btn)
 
-    def log(self, msg):
-        self.text.append(msg)
+    # ---- ANSI → HTML ----
+    @staticmethod
+    def ansi_to_html(text: str) -> str:
+        # escape html
+        text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+        ansi_map = {
+            "\033[32m": '<span style="color:#32CD32;">',  # green (ok)
+            "\033[33m": '<span style="color:#DAA520;">',  # yellow (changed)
+            "\033[31m": '<span style="color:#FF4500;">',  # red (failed)
+            "\033[0m": "</span>",                        # reset
+        }
+
+        for code, html in ansi_map.items():
+            text = text.replace(code, html)
+
+        return text
+
+    # ---- Decide icon ----
+    @staticmethod
+    def decorate(text: str) -> str:
+        low = text.lower()
+
+        if "changed" in low:
+            return f"⚠️ {text}"
+        if "ok:" in low and "not ok" not in low:
+            return f"✅ {text}"
+        if "failed" in low:
+            return f"❌ {text}"
+        if "fatal" in low or "error" in low:
+            return f"💥 {text}"
+
+        return text
+
+    # ---- Final print ----
+    def log(self, msg: str):
+        html = self.ansi_to_html(msg)
+        html = self.decorate(html)
+        self.text.append(f"<pre>{html}</pre>")
         self.text.ensureCursorVisible()
 
 
@@ -165,45 +204,111 @@ class TaskEditor(QDialog):
         v.addWidget(self.args_w)
 
         self.module.currentTextChanged.connect(self.render)
-        self.render()
 
         btn = QPushButton("Сохранить")
         btn.setFont(QFont("Arial", 14))
-        btn.clicked.connect(self.accept)
+        btn.clicked.connect(self.on_save)
         v.addWidget(btn)
 
+        self.fields = {}
+        self.spec = {}
+
         if task:
+            # подставляем имя задачи
             self.name.setText(task["name"])
+
             mod = next(k for k in task if k != "name")
+            self.module.blockSignals(True)
             self.module.setCurrentText(mod)
-            for k, field in self.fields.items():
+            self.module.blockSignals(False)
+            self.render()
+
+            for k, widget in self.fields.items():
                 if k in task[mod]:
-                    field.setText(str(task[mod][k]))
+                    val = task[mod][k]
+                    if isinstance(widget, QLineEdit):
+                        widget.setText(str(val))
+                    elif isinstance(widget, QComboBox):
+                        idx = widget.findText(str(val))
+                        if idx >= 0:
+                            widget.setCurrentIndex(idx)
+                    elif isinstance(widget, QCheckBox):
+                        widget.setChecked(bool(val))
+        else:
+            self.render()
 
     def render(self):
+        # очищаем форму
         for i in reversed(range(self.args_f.count())):
             w = self.args_f.itemAt(i).widget()
             if w:
                 w.deleteLater()
 
         mod = self.module.currentText()
-        spec = self.modules[mod]
-
+        self.spec = self.modules[mod]
         self.fields = {}
-        for arg, cfg in spec.items():
-            f = QLineEdit()
-            f.setFont(QFont("Arial", 13))
-            if "default" in cfg:
-                f.setText(str(cfg["default"]))
-            self.args_f.addRow(QLabel(arg), f)
-            self.fields[arg] = f
+
+        for arg, cfg in self.spec.items():
+            # bool → галочка
+            if cfg.get("type") == "bool":
+                f = QCheckBox()
+                if cfg.get("default"):
+                    f.setChecked(bool(cfg["default"]))
+                widget = f
+
+            # choices → dropdown
+            elif "choices" in cfg:
+                f = QComboBox()
+                f.setFont(QFont("Arial", 13))
+                f.setStyleSheet("QComboBox QListView { font-size: 13pt; font-family: Arial; }")
+
+                for ch in cfg["choices"]:
+                    f.addItem(str(ch))
+                if "default" in cfg:
+                    idx = f.findText(str(cfg["default"]))
+                    if idx >= 0:
+                        f.setCurrentIndex(idx)
+                widget = f
+
+            # обычное текстовое поле
+            else:
+                f = QLineEdit()
+                f.setFont(QFont("Arial", 13))
+                if "default" in cfg:
+                    f.setText(str(cfg["default"]))
+                widget = f
+
+            self.fields[arg] = widget
+            self.args_f.addRow(QLabel(arg), widget)
+
+    def on_save(self):
+        if not self.name.text().strip():
+            QMessageBox.warning(self, "Ошибка", "Имя задачи обязательно")
+            return
+
+        for arg, cfg in self.spec.items():
+            if cfg.get("required"):
+                w = self.fields[arg]
+                if isinstance(w, QLineEdit) and not w.text().strip():
+                    QMessageBox.warning(self, "Ошибка",
+                        f"Параметр '{arg}' обязателен")
+                    return
+
+        self.accept()
 
     def get(self):
         mod = self.module.currentText()
-        return {
-            "name": self.name.text(),
-            mod: {k: v.text() for k, v in self.fields.items()}
-        }
+        result = {}
+
+        for arg, w in self.fields.items():
+            if isinstance(w, QLineEdit):
+                result[arg] = w.text()
+            elif isinstance(w, QComboBox):
+                result[arg] = w.currentText()
+            elif isinstance(w, QCheckBox):
+                result[arg] = w.isChecked()
+
+        return {"name": self.name.text(), mod: result}
 
 
 class PlaybooksWindow(QMainWindow):

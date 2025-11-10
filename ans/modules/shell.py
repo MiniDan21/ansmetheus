@@ -16,9 +16,7 @@ class Module(BaseModule):
         if not cmd:
             self.fail_json("Parameter 'cmd' is required")
 
-        with open("TESTLOG", "w") as file:
-            process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-            file.write(cmd)
+        process = subprocess.run(cmd, shell=True, capture_output=True, text=True)
 
         if process.returncode == 0:
             self.exit_json(stdout=process.stdout.strip())

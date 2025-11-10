@@ -10,7 +10,7 @@ class Module(BaseModule):
         super().__init__(argument_spec={
             "name": {"required": False},
             "state": {"default": "present", "choices": ["present", "absent"]},
-            "update_cache": {"default": False}
+            "update_cache": {"type": "bool", "default": False}
         })
 
     def run(self):
