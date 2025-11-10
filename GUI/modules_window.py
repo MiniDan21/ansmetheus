@@ -1,10 +1,9 @@
-#!/usr/bin/env python3
 import os, importlib, pkgutil, sys
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import QFont
 from .inventory import InventoryFileManager
 from .common_runner import BaseRunner, RunLogDialog
-from .common.args_form_mixin import ArgsFormMixin   # ✅ общий рендер аргументов
+from .common.args_form_mixin import ArgsFormMixin
 
 MODULES_PACKAGE = "ans.modules"
 
@@ -81,27 +80,25 @@ class ModuleWindow(QWidget, ArgsFormMixin):
 
 
     def render_args(self, module):
-        # очистить
         for i in reversed(range(self.args_form.count())):
             w = self.args_form.itemAt(i).widget()
             if w:
                 w.deleteLater()
 
         spec = self.modules.get(module, {})
-        self.build_args_form(self.args_form, spec)   # ✅ единый построитель аргументов
+        self.build_args_form(self.args_form, spec)
 
 
     def run_module(self):
         module = self.module.currentText().strip()
         spec = self.modules[module]
 
-        # ✅ Валидация
         err = self.validate_args(spec)
         if err:
             QMessageBox.warning(self, "Ошибка", err)
             return
 
-        args = self.get_args()   # ✅ получение аргументов из mixin
+        args = self.get_args()
         use_sudo = self.sudo.isChecked()
 
         inv_path = os.path.join(os.getcwd(), "inventory.yaml")
@@ -121,7 +118,6 @@ class ModuleWindow(QWidget, ArgsFormMixin):
         r.log.connect(log.log)
 
         def on_done(ok, runner=r, dialog=log):
-            # dialog.log("✅ Готово" if ok else "❌ Ошибка")
             if runner in self.runners:
                 self.runners.remove(runner)
 

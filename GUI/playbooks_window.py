@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import os, sys, yaml, importlib, pkgutil
 from PyQt6.QtWidgets import *
 from PyQt6.QtCore import Qt
@@ -140,13 +139,11 @@ class TaskEditor(QDialog, ArgsFormMixin):
 					w.deleteLater()
 
 	def _render_form(self, existing=None):
-		# Полная очистка формы без «висящих» виджетов
 		self._clear_formlayout(self.args_f)
 
 		mod = self.module.currentText()
 		self.spec = self.modules.get(mod, {})
 
-		# Строим форму один раз. Если редактируем — передаем existing.
 		self.build_args_form(self.args_f, self.spec, existing=existing)
 
 	def on_save(self):

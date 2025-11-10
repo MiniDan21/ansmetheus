@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import os, sys
 from PyQt6.QtWidgets import *
 from PyQt6.QtCore import Qt, QFileSystemWatcher

@@ -1,9 +1,9 @@
 from PyQt6.QtWidgets import *
 from PyQt6.QtGui import QFont
 from PyQt6.QtCore import QThread, pyqtSignal
-import subprocess, sys
+import subprocess
 
-# ==== LOG WINDOW ====
+
 class RunLogDialog(QDialog):
     def __init__(self, title: str):
         super().__init__()
@@ -60,7 +60,6 @@ class RunLogDialog(QDialog):
         self.text.ensureCursorVisible()
 
 
-# ==== BASE THREAD ====
 class BaseRunner(QThread):
     log = pyqtSignal(str)
     done = pyqtSignal(bool)
