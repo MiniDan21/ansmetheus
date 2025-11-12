@@ -44,18 +44,27 @@ class Executor:
         )
 
     def execute_playbook(self, playbook_files):
+        print(f"Group [{self.host_group}]")
         playbook = Playbook(modify_paths(playbook_files))
         
         for host in self.hosts:
-            self._connect(host)
+            try:
+                self._connect(host)
 
-            with EnvironmentBridge(self._connection) as env:
-                playbook.play(env)
+                with EnvironmentBridge(self._connection) as env:
+                    playbook.play(env)
+            except ConnectionError as err:
+                print(f"Не удалось подключиться к [{host.name}]:", err)
 
     def execute_module(self, module_name, sudo: bool, **args):
+        print(f"Group [{self.host_group}]")
         for host in self.hosts:
-            self._connect(host)
-            
-            with EnvironmentBridge(self._connection, sudo_execution=sudo) as env:
-                task = Task("Oneshot task", module_name, **args)
-                task.run(env)
+            print(f"Run task at [{host.name}]", flush=True)
+            try:
+                self._connect(host)
+                
+                with EnvironmentBridge(self._connection, sudo_execution=sudo) as env:
+                    task = Task("Oneshot task", module_name, **args)
+                    task.run(env)
+            except ConnectionError as err:
+                print(f"Не удалось подключиться к [{host.name}]:", err, "\n")
