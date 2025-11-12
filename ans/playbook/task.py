@@ -33,7 +33,6 @@ class Task:
         return text
 
     def run(self, connection: Connection) -> ExecutionResult:
-        """Выполняет модуль на хосте через module_executor.py"""
         args_json = json.dumps(self.args or {})
 
         connection.init_module(self.module_name)

@@ -9,7 +9,10 @@ class Module(BaseModule):
     def __init__(self):
         super().__init__(argument_spec={
             "name": {"required": True},
-            "state": {"required": True, "choices": ["started", "stopped", "restarted"]},
+            "state": {
+                "required": True,
+                "choices": ["started", "stopped", "restarted", "status", "enable", "disable"]
+            },
         })
 
     def run(self):
@@ -33,6 +36,24 @@ class Module(BaseModule):
 
         elif state == "restarted":
             cmd = ["systemctl", "restart", name]
+
+        elif state == "enable":
+            enabled = subprocess.run(["systemctl", "is-enabled", name], capture_output=True, text=True)
+            if enabled.returncode == 0:
+                self.exit_json(changed=False, msg=f"Service {name} already enabled")
+            cmd = ["systemctl", "enable", name]
+
+        elif state == "disable":
+            enabled = subprocess.run(["systemctl", "is-enabled", name], capture_output=True, text=True)
+            if enabled.returncode != 0:
+                self.exit_json(changed=False, msg=f"Service {name} already disabled")
+            cmd = ["systemctl", "disable", name]
+
+        elif state == "status":
+            if active:
+                self.exit_json(changed=False, msg=f"Service {name} is running")
+            else:
+                self.exit_json(changed=False, msg=f"Service {name} is not running")
 
         proc = subprocess.run(cmd, capture_output=True, text=True)
 
