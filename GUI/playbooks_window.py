@@ -6,7 +6,6 @@ from .inventory import InventoryFileManager
 from .common_runner import BaseRunner, RunLogDialog
 from .common.args_form_mixin import ArgsFormMixin
 
-
 PLAYBOOK_CLI = os.path.join(os.getcwd(), "ans_playbook.py")
 MODULES_PACKAGE = "ans.modules"
 
@@ -103,22 +102,16 @@ class TaskEditor(QDialog, ArgsFormMixin):
 		v.addWidget(self.args_w)
 
 		self.spec = {}
-
-		# 1) Первый рендер по текущему модулю без existing
 		self._render_form(existing=None)
 
-		# 2) Если редактируем — проставим модуль и отрисуем ОДИН РАЗ с existing
 		if task:
 			self.name.setText(task["name"])
 			mod = next(k for k in task if k != "name")
-
 			self.module.blockSignals(True)
 			self.module.setCurrentText(mod)
 			self.module.blockSignals(False)
-
 			self._render_form(existing=task.get(mod, None))
 
-		# 3) Теперь подключаем сигнал, чтобы при смене модуля был чистый рендер
 		self.module.currentTextChanged.connect(lambda _=None: self._render_form(existing=None))
 
 		btn = QPushButton("Сохранить")
@@ -140,10 +133,8 @@ class TaskEditor(QDialog, ArgsFormMixin):
 
 	def _render_form(self, existing=None):
 		self._clear_formlayout(self.args_f)
-
 		mod = self.module.currentText()
 		self.spec = self.modules.get(mod, {})
-
 		self.build_args_form(self.args_f, self.spec, existing=existing)
 
 	def on_save(self):
@@ -187,14 +178,18 @@ class PlaybooksWindow(QMainWindow):
 		self.b_del = QPushButton("🗑 Удалить")
 		self.b_run = QPushButton("🚀 Запустить")
 		self.b_back = QPushButton("⬅ Назад")
+		self.b_up = QPushButton("⬆ Вверх")
+		self.b_down = QPushButton("⬇ Вниз")
 
-		for b in (self.b_new, self.b_edit, self.b_add_task, self.b_del, self.b_run, self.b_back):
+		for b in (self.b_new, self.b_edit, self.b_add_task, self.b_del,
+		          self.b_run, self.b_up, self.b_down, self.b_back):
 			b.setFont(QFont("Arial", 14))
 			b.setFixedHeight(50)
 
 		h = QHBoxLayout()
 		v.addLayout(h)
-		for b in (self.b_new, self.b_edit, self.b_add_task, self.b_del, self.b_run, self.b_back):
+		for b in (self.b_new, self.b_edit, self.b_add_task, self.b_del,
+		          self.b_run, self.b_up, self.b_down, self.b_back):
 			h.addWidget(b)
 
 		self.b_new.clicked.connect(self.new_pb)
@@ -203,6 +198,8 @@ class PlaybooksWindow(QMainWindow):
 		self.b_run.clicked.connect(self.run_selected)
 		self.b_back.clicked.connect(self.close)
 		self.b_edit.clicked.connect(self._edit_selected)
+		self.b_up.clicked.connect(self.move_up)
+		self.b_down.clicked.connect(self.move_down)
 
 		self.tree.itemSelectionChanged.connect(self._update_buttons)
 
@@ -215,11 +212,9 @@ class PlaybooksWindow(QMainWindow):
 
 	def load(self):
 		self.tree.clear()
-
 		for f in sorted(os.listdir(self.dir)):
 			if not f.endswith(".yaml"):
 				continue
-
 			file = os.path.join(self.dir, f)
 			pb = yaml.safe_load(open(file, encoding="utf-8"))
 
@@ -232,7 +227,6 @@ class PlaybooksWindow(QMainWindow):
 				it = QTreeWidgetItem([f"📌 {task['name']}"])
 				it.setData(0, Qt.ItemDataRole.UserRole, {"file": file, "task": task})
 				root.addChild(it)
-
 		self.tree.expandAll()
 
 	def _selected_playbooks(self):
@@ -245,12 +239,9 @@ class PlaybooksWindow(QMainWindow):
 
 	def _update_buttons(self):
 		sel = self.tree.selectedItems()
-
 		if not sel:
-			self.b_edit.setEnabled(False)
-			self.b_add_task.setEnabled(False)
-			self.b_del.setEnabled(False)
-			self.b_run.setEnabled(False)
+			for b in (self.b_edit, self.b_add_task, self.b_del, self.b_run, self.b_up, self.b_down):
+				b.setEnabled(False)
 			return
 
 		info = sel[0].data(0, Qt.ItemDataRole.UserRole) or {}
@@ -261,6 +252,8 @@ class PlaybooksWindow(QMainWindow):
 		self.b_edit.setEnabled(is_pb or is_task)
 		self.b_del.setEnabled(True)
 		self.b_run.setEnabled(is_pb)
+		self.b_up.setEnabled(is_task)
+		self.b_down.setEnabled(is_task)
 
 	def _edit_selected(self):
 		sel = self.tree.selectedItems()
@@ -274,14 +267,11 @@ class PlaybooksWindow(QMainWindow):
 
 	def new_pb(self):
 		names = [self.tree.topLevelItem(i).text(0) for i in range(self.tree.topLevelItemCount())]
-
 		dlg = PlaybookEditor(names, "", False)
 		if not dlg.exec():
 			return
-
 		name, sudo = dlg.get()
 		file = os.path.join(self.dir, f"{name}.yaml")
-
 		self.dump(file, [{"name": name, "sudo": sudo, "tasks": []}])
 		self.load()
 
@@ -293,7 +283,6 @@ class PlaybooksWindow(QMainWindow):
 
 		current_name = pb[0]["name"]
 		current_sudo = pb[0].get("sudo", False)
-
 		names = [
 			self.tree.topLevelItem(i).text(0)
 			for i in range(self.tree.topLevelItemCount())
@@ -301,7 +290,6 @@ class PlaybooksWindow(QMainWindow):
 		]
 
 		dlg = PlaybookEditor(names, current_name, current_sudo)
-
 		if not dlg.exec():
 			return
 
@@ -310,25 +298,20 @@ class PlaybooksWindow(QMainWindow):
 
 		pb[0]["name"] = new_name
 		pb[0]["sudo"] = sudo
-
 		self.dump(new_file, pb)
 
 		if new_file != file:
 			os.remove(file)
-
 		self.load()
 
 	def add_task(self):
 		sel = self.tree.selectedItems()[0]
 		info = sel.data(0, Qt.ItemDataRole.UserRole)
 		file = info["file"]
-
 		pb = yaml.safe_load(open(file, encoding="utf-8"))
-
 		dlg = TaskEditor(self.modules)
 		if not dlg.exec():
 			return
-
 		pb[0]["tasks"].append(dlg.get())
 		self.dump(file, pb)
 		self.load()
@@ -337,19 +320,15 @@ class PlaybooksWindow(QMainWindow):
 		sel = self.tree.selectedItems()[0]
 		info = sel.data(0, Qt.ItemDataRole.UserRole)
 		file, task = info["file"], info["task"]
-
 		pb = yaml.safe_load(open(file, encoding="utf-8"))
-
 		dlg = TaskEditor(self.modules, task)
 		if not dlg.exec():
 			return
-
 		new = dlg.get()
 		for i, t in enumerate(pb[0]["tasks"]):
 			if t["name"] == task["name"]:
 				pb[0]["tasks"][i] = new
 				break
-
 		self.dump(file, pb)
 		self.load()
 
@@ -364,8 +343,60 @@ class PlaybooksWindow(QMainWindow):
 			self.dump(file, pb)
 		else:
 			os.remove(file)
-
 		self.load()
+
+	# ---- перемещение задач ----
+	def move_up(self):
+		sel = self.tree.selectedItems()
+		if not sel:
+			return
+		item = sel[0]
+		info = item.data(0, Qt.ItemDataRole.UserRole)
+		if "task" not in info:
+			return
+		file = info["file"]
+		pb = yaml.safe_load(open(file, encoding="utf-8"))
+		tasks = pb[0]["tasks"]
+		name = info["task"]["name"]
+		idx = next((i for i, t in enumerate(tasks) if t["name"] == name), -1)
+		if idx > 0:
+			tasks[idx - 1], tasks[idx] = tasks[idx], tasks[idx - 1]
+			self.dump(file, pb)
+			self.load()
+			root = self._find_root_by_file(file)
+			if root:
+				child = root.child(idx - 1)
+				self.tree.setCurrentItem(child)
+
+	def move_down(self):
+		sel = self.tree.selectedItems()
+		if not sel:
+			return
+		item = sel[0]
+		info = item.data(0, Qt.ItemDataRole.UserRole)
+		if "task" not in info:
+			return
+		file = info["file"]
+		pb = yaml.safe_load(open(file, encoding="utf-8"))
+		tasks = pb[0]["tasks"]
+		name = info["task"]["name"]
+		idx = next((i for i, t in enumerate(tasks) if t["name"] == name), -1)
+		if idx < len(tasks) - 1:
+			tasks[idx + 1], tasks[idx] = tasks[idx], tasks[idx + 1]
+			self.dump(file, pb)
+			self.load()
+			root = self._find_root_by_file(file)
+			if root:
+				child = root.child(idx + 1)
+				self.tree.setCurrentItem(child)
+
+	def _find_root_by_file(self, file):
+		for i in range(self.tree.topLevelItemCount()):
+			root = self.tree.topLevelItem(i)
+			info = root.data(0, Qt.ItemDataRole.UserRole)
+			if info and info.get("file") == file:
+				return root
+		return None
 
 	def run_selected(self):
 		files = self._selected_playbooks()
@@ -376,22 +407,17 @@ class PlaybooksWindow(QMainWindow):
 		inv = InventoryFileManager(self.inv).get_inventory()
 		hosts = list(inv.hosts.keys()) + list(inv.groups.keys())
 		host, ok = QInputDialog.getItem(self, "Запуск", "Хост / группа:", hosts, editable=False)
-
 		if not ok:
 			return
 
 		for pb in files:
 			log = RunLogDialog(f"Playbook: {host} → {pb}")
 			log.show()
-
 			r = PlaybookRunner(host, self.inv, pb)
 			self.runners.append(r)
-
 			r.log.connect(log.log)
-
 			def on_done(ok, runner=r, dialog=log):
 				if runner in self.runners:
 					self.runners.remove(runner)
-
 			r.done.connect(on_done)
 			r.start()
