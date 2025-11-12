@@ -162,7 +162,7 @@ class PlaybooksWindow(QMainWindow):
 	def __init__(self, inv, pb_dir="playbooks", parent=None):
 		super().__init__(parent)
 		self.setWindowTitle("Playbooks")
-		self.resize(1000, 700)
+		self.resize(700, 700)
 
 		self.inv = inv
 		self.dir = pb_dir
