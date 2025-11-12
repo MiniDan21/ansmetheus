@@ -31,7 +31,7 @@ class Module(BaseModule):
         output = proc.stdout.strip()
 
         if proc.returncode == 0:
-            self.exit_json(changed=True, msg=output)
+            self.exit_json(changed=False, msg=output)
         else:
             self.fail_json(msg=proc.stderr)
 
